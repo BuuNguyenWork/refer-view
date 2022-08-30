@@ -2,7 +2,7 @@ import axios from "axios";
 import React, {useState } from "react";
 import 'react-tree-graph/dist/style.css'
 import { TreeTable, TreeState } from 'cp-react-tree-table';
-import Demo from "./Demo";
+import "./App.css"
 
 const options = {
   method: "POST",
@@ -19,7 +19,7 @@ export default function App() {
   const [wallet, setWallet] = useState("");
   const [number, setNumber] = useState(0);
   const [result, setResult] = useState();
-  const [treeResult, setTreeResult] = useState();
+  const [treeValue, setTreeValue] = useState();
 
   const prepareString = () => {
     let queryString = `query { user(id: "${wallet}") { id referralCode `;
@@ -68,7 +68,7 @@ export default function App() {
     const result = await axios.request(options);
     let user = result.data.data.user;
     let data = [handleObject(user)];
-    setTreeResult(TreeState.create(data))
+    setTreeValue(TreeState.create(data))
     let listResult = [];
     appendResult(user, listResult, 0);  
     setResult(listResult);
@@ -84,6 +84,45 @@ export default function App() {
     }
     return total;
   }
+
+  const handleOnChange = (newValue) => {
+    setTreeValue(newValue);
+  }
+  
+  const renderIndexCell = (row) => {
+    return (
+      <div style={{ paddingLeft: (row.metadata.depth * 15) + 'px'}}
+        className={row.metadata.hasChildren ? 'with-children' : 'without-children'}>
+        
+        {(row.metadata.hasChildren)
+          ? (
+              <button className="toggle-button" onClick={row.toggleChildren}></button>
+            )
+          : ''
+        }
+        
+        <span>{row.data.id} ({getLength(row)})</span>
+      </div>
+    );
+  }
+
+  const renderEditableCell = (row) => {
+    return (
+      <input type="text" value={row.data.referralCode}
+        onChange={(event) => {
+          row.updateData({
+            ...row.data,
+            referralCode: event.target.value,
+          });
+        }}/>
+    );
+  }
+
+  const getLength = (row) => {
+      return row.data.totalLength
+  }
+
+
 
   return (
     <div>
@@ -111,7 +150,16 @@ export default function App() {
       <button onClickCapture={onClickSearch}>Click on me</button>
       <div>
         {result !== undefined && 
-          <Demo data={treeResult}/>
+          <TreeTable
+            value={treeValue}
+            onChange={handleOnChange}>
+          <TreeTable.Column basis="800px" grow="0"
+            renderCell={renderIndexCell}
+            renderHeaderCell={() => <span>Id</span>}/>
+          <TreeTable.Column
+            renderCell={renderEditableCell}
+            renderHeaderCell={() => <span>Referral Code</span>}/>
+        </TreeTable>
         }
       </div>
 
