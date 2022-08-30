@@ -9,6 +9,7 @@
     "axios": "^0.27.2",
     "bootstrap": "^5.2.0",
     "classnames": "^2.3.1",
+    "cp-react-tree-table": "^1.1.1",
     "d3-hierarchy": "^3.1.2",
     "graphql-request": "^4.3.0",
     "react": "^18.2.0",

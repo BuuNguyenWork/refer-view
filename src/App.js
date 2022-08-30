@@ -1,8 +1,8 @@
 import axios from "axios";
 import React, {useState } from "react";
-import {Tree } from 'react-tree-graph';
-import {stratify} from 'd3-hierarchy'
 import 'react-tree-graph/dist/style.css'
+import { TreeTable, TreeState } from 'cp-react-tree-table';
+import Demo from "./Demo";
 
 const options = {
   method: "POST",
@@ -19,6 +19,7 @@ export default function App() {
   const [wallet, setWallet] = useState("");
   const [number, setNumber] = useState(0);
   const [result, setResult] = useState();
+  const [treeResult, setTreeResult] = useState();
 
   const prepareString = () => {
     let queryString = `query { user(id: "${wallet}") { id referralCode `;
@@ -46,23 +47,42 @@ export default function App() {
     }
   }
 
+  const handleObject = (user) => {
+    let object = {}
+    object.data = {id: user.id, referralCode: user.referralCode}
+    let children = [];
+    if (user.referralTos) {
+      for (let i = 0;i<user.referralTos.length;i++){
+        let newUser = handleObject(user.referralTos[i]);
+        children.push(newUser);
+      }
+    }
+    object.data.totalLength = children.length;
+    object.children = children;
+    return object;
+  }
+
   const onClickSearch = async () => {
     let queryString = prepareString();
     options.data.query = queryString;
     const result = await axios.request(options);
     let user = result.data.data.user;
+    let data = [handleObject(user)];
+    setTreeResult(TreeState.create(data))
     let listResult = [];
-    appendResult(user, listResult, 0);
-    console.log(listResult)
+    appendResult(user, listResult, 0);  
     setResult(listResult);
   };
 
-  const getPadding = (level) => {
-    let val=10;
-    for (let i = 0 ;i< level;i++) {
-      val+=25;
+  const getListTotal = () => {
+    let total = [];
+    for (let i =0;i<=number;i++) {
+      total.push(0);
+    } 
+    for (let i =0;i<result.length; i++) {
+      total[result[i].level] = total[result[i].level] + 1;
     }
-    return val;
+    return total;
   }
 
   return (
@@ -91,26 +111,22 @@ export default function App() {
       <button onClickCapture={onClickSearch}>Click on me</button>
       <div>
         {result !== undefined && 
-          <table className="table table-striped">
-            <thead className="thead-dark">
-              <tr>
-                <th>Level</th>
-                <th>Wallet address</th>
-                <th>Referral Code</th>
-              </tr>
-            </thead>
-            <tbody>
-            {result.map((val, key) => {
-              return (
-                <tr key={key}>
-                  <td style={{paddingLeft: getPadding(val.level)}}>{val.level} ({val.total})</td>
-                  <td>{val.id}</td>
-                  <td>{val.referralCode}</td>
-                </tr>
-              )
-            })}
-            </tbody>
-          </table>
+          <Demo data={treeResult}/>
+        }
+      </div>
+
+      <div>
+        {result !== undefined && 
+        getListTotal().map((val, key) => {
+          return (
+            <p>Number total F{key}: {val} </p>
+          )
+        })
+        }
+      </div>
+      <div>
+        {result !== undefined && 
+        <p>Total all: {result.length}</p>
         }
       </div>
     </div>
